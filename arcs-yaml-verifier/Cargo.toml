@@ -1,13 +1,12 @@
 [package]
-name = "arcs-yaml-verifier"
+name = "arcs-yaml-parser"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arcs-deploy-shared-structs = { version = "0.1.0", path = "../arcs-deploy-shared-structs" }
-guard = "0.5.1"
 lazy_static = "1.4.0"
+regex = "1.7.3"
 serde = { version = "1.0.144", features = ["derive"] }
 serde_yaml = "0.9.10"
