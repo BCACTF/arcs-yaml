@@ -6,6 +6,7 @@ mod deploy;
 
 mod structs;
 mod accessors;
+mod serialize_impl;
 
 pub mod correctness;
 
@@ -22,10 +23,11 @@ use {
     flag::get_flag,
     files::file_list,
     lists::as_str_list,
+    deploy::parse_deploy,
 };
 
 use {
-    files::Files,
+    files::structs::Files,
     flag::Flag,
     lists::structs::{ Authors, Hints },
     categories::Categories,
@@ -52,10 +54,6 @@ pub use structs::{
     YamlAttribVerifyError
 };
 use correctness::YamlCorrectness;
-
-
-// misc
-use crate::{files::Flop, deploy::parse_deploy};
 
 
 
@@ -251,3 +249,18 @@ pub mod __main {
         }
     }
 }
+
+
+trait Flop {
+    type Target;
+    fn flop(self) -> Self::Target;
+}
+impl<T, E> Flop for Option<Result<T, E>> {
+    type Target = Result<Option<T>, E>;
+    fn flop(self) -> Self::Target {
+        if let Some(res) = self {
+            res.map(Some)
+        } else { Ok(None) }
+    }
+}
+

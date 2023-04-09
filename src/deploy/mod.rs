@@ -5,7 +5,8 @@ pub mod structs;
 
 use serde_yaml::Value as YamlValue;
 
-use crate::{structs::{get_type}, files::Flop};
+use crate::structs::get_type;
+use crate::Flop;
 
 use self::{
     error::{DeployOptionsError, DeploymentTargetOptionsError, ExposeError},

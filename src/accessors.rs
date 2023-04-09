@@ -1,7 +1,8 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use crate::{YamlShape, YamlVerifyError, YamlCorrectness, categories::structs::Category, deploy::structs::DeployOptions};
+use crate::{YamlShape, YamlVerifyError, YamlCorrectness, categories::structs::Category, deploy::structs::DeployOptions, files::structs::File};
 
+use crate::files::structs::Files;
 
 impl YamlShape {
     pub fn try_from_str(s: &str, correctness: &YamlCorrectness) -> Result<YamlShape, YamlVerifyError> {
@@ -9,11 +10,14 @@ impl YamlShape {
     }
 }
 impl YamlShape {
-    pub fn file_iter(&self) -> Option<impl Iterator<Item = &Path>> {
-        self.files.as_ref().map(crate::files::Files::iter)
+    pub fn file_path_iter(&self) -> Option<impl Iterator<Item = &Path>> {
+        self.files.as_ref().map(Files::iter_paths)
     }
-    pub fn files(&self) -> Option<&[PathBuf]> {
-        self.files.as_ref().map(crate::files::Files::slice)
+    pub fn file_iter(&self) -> Option<impl Iterator<Item = &File>> {
+        self.files.as_ref().map(Files::iter)
+    }
+    pub fn files(&self) -> Option<&[File]> {
+        self.files.as_ref().map(Files::slice)
     }
 
     pub fn author_iter(&self) -> impl Iterator<Item = &str> {

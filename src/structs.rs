@@ -7,7 +7,7 @@ use serde_yaml::Value as YamlValue;
 use crate::categories::CategoryError;
 use crate::correctness::YamlCorrectness;
 use crate::deploy::error::DeployOptionsError;
-use crate::files::FileErrors;
+use crate::files::errors::FileErrors;
 use crate::flag::FlagError;
 use crate::lists::structs::AuthorError;
 use crate::lists::structs::HintError;
