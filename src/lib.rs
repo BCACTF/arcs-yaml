@@ -11,6 +11,8 @@ mod serialize_impl;
 pub mod correctness;
 
 
+use std::path::Path;
+
 // Serde
 use serde_yaml::{
     Mapping as YamlMapping,
@@ -33,6 +35,7 @@ use {
     categories::Categories,
 };
 pub use deploy::structs::DeployOptions;
+pub use files::structs::File;
 
 use {
     lists::structs::AuthorError,
@@ -98,7 +101,7 @@ macro_rules! collect_errors {
 }
 
 
-fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>) -> Result<YamlShape, YamlVerifyError> {
+fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>, base_path: &Path) -> Result<YamlShape, YamlVerifyError> {
     use YamlVerifyError::*;
     use YamlAttribVerifyError::*;
 
@@ -132,7 +135,7 @@ fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>) ->
 
         let files = base
             .get("files")
-            .map(file_list)
+            .map(|value| file_list(value, base_path))
             .flop()
             .map_err(Files);
         
@@ -217,6 +220,7 @@ fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>) ->
 #[doc(hidden)]
 pub mod __main {
     use crate::correctness::YamlCorrectness;
+    use crate::YamlShape;
 
     pub fn main(yaml_correctness: YamlCorrectness) {
         let mut errors_encountered = false;
@@ -236,7 +240,7 @@ pub mod __main {
                 }
             )
             .for_each(
-                |yaml_parse_result| match crate::verify_yaml(&yaml_parse_result, Some(yaml_correctness.clone())) {
+                |yaml_parse_result| match YamlShape::try_from_str(&yaml_parse_result, &yaml_correctness.clone(), None) {
                     Ok(yaml) => println!("{yaml:#?}"),
                     Err(err) => {
                         errors_encountered = true;

@@ -5,8 +5,9 @@ use crate::{YamlShape, YamlVerifyError, YamlCorrectness, categories::structs::Ca
 use crate::files::structs::Files;
 
 impl YamlShape {
-    pub fn try_from_str(s: &str, correctness: &YamlCorrectness) -> Result<YamlShape, YamlVerifyError> {
-        super::verify_yaml(s, Some(correctness.clone()))
+    pub fn try_from_str(s: &str, correctness: &YamlCorrectness, base_path: Option<&Path>) -> Result<YamlShape, YamlVerifyError> {
+        let curr_path = std::env::current_dir().map_err(|_| YamlVerifyError::OsError)?;
+        super::verify_yaml(s, Some(correctness.clone()), base_path.unwrap_or(curr_path.as_path()))
     }
 }
 impl YamlShape {

@@ -84,6 +84,7 @@ pub enum YamlVerifyError {
     BaseNotMap(ValueType),
     PartErrors(Vec<YamlAttribVerifyError>),
     Correctness(YamlCorrectness),
+    OsError,
 }
 
 impl Display for YamlAttribVerifyError {
@@ -122,6 +123,7 @@ impl Display for YamlVerifyError {
                 Ok(())
             }
             Correctness(correctness) => writeln!(f, "{correctness}"),
+            OsError => writeln!(f, "An unknown error occurred"),
         }
     }
 }

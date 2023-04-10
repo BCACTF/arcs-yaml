@@ -63,6 +63,8 @@ impl File {
     pub fn alias(&self) -> Option<&str> { self.alias.as_ref().map(String::as_str) }
     pub fn container(&self) -> Option<ContainerType> { self.container }
     pub fn data(&self) -> &[u8] { &self.data }
+    pub fn data_vec(self) -> Vec<u8> { self.data }
+    pub fn data_vec_cloned(&self) -> Vec<u8> { self.data.clone() }
 }
 impl Debug for File {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

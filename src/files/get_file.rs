@@ -1,5 +1,6 @@
 
 
+use std::path::{ Path, PathBuf };
 use std::str::FromStr;
 
 use serde_yaml::Mapping as YamlMapping;
@@ -10,10 +11,9 @@ use crate::structs::get_type;
 use super::structs::File;
 use super::errors::FileParseErr;
 
-pub fn get_file_from_mapping(mapping: &YamlMapping) -> Result<File, FileParseErr> {
+pub fn get_file_from_mapping(mapping: &YamlMapping, base_path: &Path) -> Result<File, FileParseErr> {
     let path = 'path_block: {
         use super::errors::FilePathErr;
-        use std::path::PathBuf;
 
         let value = if let Some(value) = mapping.get("src") {
             value
@@ -79,10 +79,10 @@ pub fn get_file_from_mapping(mapping: &YamlMapping) -> Result<File, FileParseErr
         use std::io::ErrorKind as IoErrorKind;
 
         let path = if let Some(path) = path.as_ref().ok() {
-            path
+            base_path.join(&path)
         } else { break 'data_block None };
 
-        match std::fs::read(path) {
+        match std::fs::read(&path) {
             Ok(data) => Some(Ok(data)),
             Err(err) => match err.kind() {
                 IoErrorKind::NotFound => Some(Err(DataReadErr::DoesntExist(path.clone()))),

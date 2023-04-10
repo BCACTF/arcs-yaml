@@ -3,6 +3,8 @@ pub mod errors;
 mod get_file;
 
 
+use std::path::Path;
+
 use structs::Files;
 
 
@@ -13,7 +15,7 @@ use crate::structs::get_type;
 use self::errors::{FileParseErr, FileErrors};
 use self::get_file::get_file_from_mapping;
 
-pub fn file_list(value: &YamlValue) -> Result<Files, FileErrors> {
+pub fn file_list(value: &YamlValue, base_path: &Path) -> Result<Files, FileErrors> {
     let sequence = value.as_sequence().ok_or_else(|| FileErrors::BadBaseType(get_type(value)))?;
 
     let entries = sequence
@@ -22,7 +24,8 @@ pub fn file_list(value: &YamlValue) -> Result<Files, FileErrors> {
             |val| get_file_from_mapping(
                 val
                     .as_mapping()
-                    .ok_or_else(|| FileParseErr::ItemNotMapping(get_type(value)))?
+                    .ok_or_else(|| FileParseErr::ItemNotMapping(get_type(value)))?,
+                base_path,
             )
         );
 
