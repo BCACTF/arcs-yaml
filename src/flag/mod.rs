@@ -1,8 +1,20 @@
-use std::{fmt::{Display, Debug}, path::PathBuf, str::FromStr};
+use std::{fmt::{Display, Debug}, path::PathBuf, str::FromStr, io::ErrorKind};
 
 use serde_yaml::Value as YamlValue;
 
 use crate::structs::{get_type, ValueType};
+
+
+pub fn get_file_flag(path: PathBuf) -> Result<Flag, FlagError> {
+    match std::fs::read_to_string(&path) {
+        Ok(s) => Ok(Flag::File(path, s)),
+        Err(e) => if e.kind() == ErrorKind::NotFound {
+            Err(FlagError::FileMissing(path))
+        } else {
+            Err(FlagError::OsError(path))
+        },
+    }
+}
 
 pub fn get_flag(value: &YamlValue) -> Result<Flag, FlagError> {
     if let Some(flag_str) = value.as_str() {
@@ -10,7 +22,9 @@ pub fn get_flag(value: &YamlValue) -> Result<Flag, FlagError> {
     } else if let Some(mapping) = value.as_mapping() {
         if let Some(Some(file)) = mapping.get("file").map(YamlValue::as_str) {
             if let Ok(path) = PathBuf::from_str(file) {
-                Ok(Flag::File(path))
+                get_file_flag(path)
+                // Ok(Flag::File(path))
+
             } else {
                 Err(FlagError::BadPath(file.to_string()))
             }
@@ -25,7 +39,20 @@ pub fn get_flag(value: &YamlValue) -> Result<Flag, FlagError> {
 #[derive(Clone, PartialEq)]
 pub enum Flag {
     String(String),
-    File(PathBuf),
+    File(PathBuf, String),
+}
+impl Flag {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::String(s) => s,
+            Self::File(_, s) => s,
+        }
+    }
+    pub fn path(&self) -> Option<&std::path::Path> {
+        if let Self::File(p, _) = self {
+            Some(p.as_path())
+        } else { None }
+    }
 }
 
 impl Debug for Flag {
@@ -33,7 +60,7 @@ impl Debug for Flag {
         use Flag::{ String, File };
         match self {
             String(s) => write!(f, "Flag< {s} >"),
-            File(p) => write!(f, "File< @ {} >", p.display()),
+            File(p, s) => write!(f, "Flag< {s} (@ {}) >", p.display()),
         }
     }
 }
@@ -47,6 +74,8 @@ pub enum FlagError {
 
     BadPath(String),
     MappingNeedsFile,
+    FileMissing(PathBuf),
+    OsError(PathBuf),
     
     MissingKey,
 }
@@ -55,11 +84,13 @@ impl Display for FlagError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use FlagError::*;
         match self {
-            &BadType(t) => write!(f, "Flag should be a list, not {t}."),
+            BadType(t) => write!(f, "Flag should be a list, not {t}."),
             BadString(s) => write!(f, "The string {s} is not a valid flag."),
             BadPath(p) => write!(f, "The string {p} is not a valid path. (hint: If you want to define a flag with a string, use `flag: <input>`)"),
-            &MappingNeedsFile => write!(f, "If you are going to define a flag via a file, you need to have `file: <path>` as an entry under `flag`. (<path> must be a string)"),
-            &MissingKey => write!(f, "You have to define `categories`."),
+            MappingNeedsFile => write!(f, "If you are going to define a flag via a file, you need to have `file: <path>` as an entry under `flag`. (<path> must be a string)"),
+            MissingKey => write!(f, "You have to define `categories`."),
+            FileMissing(p) => write!(f, "There is no file at {}.", p.display()),
+            OsError(p) => write!(f, "There was an issue opening the file at {}. Maybe check permissions?", p.display()),
         }
     }
 }

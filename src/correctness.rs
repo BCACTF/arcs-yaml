@@ -79,9 +79,7 @@ impl YamlCorrectness {
     pub fn check_pnts(&self, points: u64) -> bool { self.points.check(points) }
 
     pub fn verify<'a>(&self, shape: &'a YamlShape) -> Result<&'a YamlShape, YamlCorrectness> {
-        let flag_ok = if let crate::flag::Flag::String(flag) = &shape.flag {
-            self.check_flag(flag)
-        } else { true };
+        let flag_ok = self.check_flag(shape.flag.as_str());
         let cats_ok = self.check_cats(shape.categories.iter().map(Category::as_str));
         let pnts_ok = self.check_pnts(shape.points);
         if flag_ok && cats_ok && pnts_ok {

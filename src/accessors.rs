@@ -50,15 +50,11 @@ impl YamlShape {
 }
 
 impl YamlShape {
-    pub fn flag_str(&self) -> Option<&str> {
-        if let crate::flag::Flag::String(s) = &self.flag {
-            Some(&s)
-        } else { None }
+    pub fn flag_str(&self) -> &str {
+        self.flag.as_str()
     }
     pub fn flag_filepath(&self) -> Option<&Path> {
-        if let crate::flag::Flag::File(p) = &self.flag {
-            Some(&p)
-        } else { None }
+        self.flag.path()
     }
 }
 
