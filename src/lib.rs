@@ -156,7 +156,7 @@ fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>, ba
 
     let flag = base
         .get("flag")
-        .map_or(Err(FlagError::MissingKey), get_flag)
+        .map_or(Err(FlagError::MissingKey), |value| get_flag(value, base_path))
         .map_err(Flag);
 
 

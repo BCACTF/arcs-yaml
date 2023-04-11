@@ -1,12 +1,12 @@
-use std::{fmt::{Display, Debug}, path::PathBuf, str::FromStr, io::ErrorKind};
+use std::{fmt::{Display, Debug}, path::{PathBuf, Path}, str::FromStr, io::ErrorKind};
 
 use serde_yaml::Value as YamlValue;
 
 use crate::structs::{get_type, ValueType};
 
 
-pub fn get_file_flag(path: PathBuf) -> Result<Flag, FlagError> {
-    match std::fs::read_to_string(&path) {
+pub fn get_file_flag(path: PathBuf, base_path: &Path) -> Result<Flag, FlagError> {
+    match std::fs::read_to_string(&base_path.join(&path)) {
         Ok(s) => Ok(Flag::File(path, s)),
         Err(e) => if e.kind() == ErrorKind::NotFound {
             Err(FlagError::FileMissing(path))
@@ -16,15 +16,17 @@ pub fn get_file_flag(path: PathBuf) -> Result<Flag, FlagError> {
     }
 }
 
-pub fn get_flag(value: &YamlValue) -> Result<Flag, FlagError> {
+pub fn get_flag(value: &YamlValue, base_path: &Path) -> Result<Flag, FlagError> {
     if let Some(flag_str) = value.as_str() {
         Ok(Flag::String(flag_str.to_string()))
     } else if let Some(mapping) = value.as_mapping() {
         if let Some(Some(file)) = mapping.get("file").map(YamlValue::as_str) {
             if let Ok(path) = PathBuf::from_str(file) {
-                get_file_flag(path)
-                // Ok(Flag::File(path))
-
+                if path.is_relative() {
+                    get_file_flag(path, base_path)
+                } else {
+                    Err(FlagError::BadPath(file.to_string()))
+                }
             } else {
                 Err(FlagError::BadPath(file.to_string()))
             }
