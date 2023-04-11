@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::fmt::{Debug, Display};
+use std::sync::Arc;
 use regex::Regex;
 
 use crate::YamlShape;
@@ -40,13 +41,13 @@ pub enum CategoryCorrectness {
     }
 }
 
-pub trait CanBePred: Fn(u64) -> bool + Debug {}
+pub trait CanBePred: Fn(u64) -> bool + Debug + Send + Sync {}
 
 #[derive(Clone)]
 pub enum PointCorrectness {
     None,
     Multiple(u64),
-    Pred(std::rc::Rc<dyn CanBePred>),
+    Pred(Arc<dyn CanBePred>),
 }
 
 impl PartialEq for PointCorrectness {
@@ -56,8 +57,8 @@ impl PartialEq for PointCorrectness {
             (None, None) => true,
             (Multiple(n1), Multiple(n2)) => n1 == n2,
             (Pred(p1), Pred(p2)) => std::ptr::eq(
-                std::rc::Rc::as_ptr(p1) as *mut (),
-                std::rc::Rc::as_ptr(p2) as *mut (),
+                Arc::as_ptr(p1) as *mut (),
+                Arc::as_ptr(p2) as *mut (),
             ),
             _ => false,
         }
