@@ -73,7 +73,6 @@ pub fn get_file_from_mapping(mapping: &YamlMapping, base_path: &Path) -> Result<
         Some(Ok(cont_type))
     }.flop();
 
-
     let data = 'data_block: {
         use super::errors::DataReadErr;
         use std::io::ErrorKind as IoErrorKind;
@@ -81,6 +80,15 @@ pub fn get_file_from_mapping(mapping: &YamlMapping, base_path: &Path) -> Result<
         let path = if let Some(path) = path.as_ref().ok() {
             base_path.join(&path)
         } else { break 'data_block None };
+        
+        // TODO --> Fix this hack, not really sure if it even works properly
+        if let Some(container_type) = container.as_ref().ok() {
+            if let Some(container_type) = container_type {
+                if container_type == &super::structs::ContainerType::Nc {
+                    break 'data_block Some(Ok(vec![]));
+                }
+            }
+        }
 
         match std::fs::read(&path) {
             Ok(data) => Some(Ok(data)),

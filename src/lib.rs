@@ -1,8 +1,8 @@
-mod categories;
-mod lists;
-mod flag;
-mod files;
-mod deploy;
+pub mod categories;
+pub mod lists;
+pub mod flag;
+pub mod files;
+pub mod deploy;
 
 mod structs;
 mod accessors;
