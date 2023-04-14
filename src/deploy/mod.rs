@@ -4,12 +4,14 @@ pub mod structs;
 
 
 use serde_yaml::Value as YamlValue;
+use std::path::PathBuf;
+use std::str::FromStr;
 
 use crate::structs::get_type;
 use crate::Flop;
 
 use self::{
-    error::{DeployOptionsError, DeploymentTargetOptionsError, ExposeError},
+    error::{DeployOptionsError, DeploymentTargetOptionsError, ExposeError, BuildError},
     structs::{DeployOptions, DeployTarget, NetworkProtocol},
 };
 
@@ -55,6 +57,26 @@ pub fn parse_deploy_target(value: &YamlValue) -> Result<DeployTarget, Deployment
         .map_or(Err(ExposeError::Missing), parse_expose);
 
 
+    let build = 'path_block: {
+        let value = if let Some(value) = mapping.get("src") {
+            value
+        } else { break 'path_block Ok(PathBuf::from(".")) };
+        
+        let string = if let Some(string) = value.as_str() {
+            string
+        } else { break 'path_block Err(BuildError::BadType(get_type(value))) };
+
+        let path = if let Ok(path) = PathBuf::from_str(string) {
+            path
+        } else { break 'path_block Err(BuildError::NotPath(string.to_string())) };
+    
+        if !path.is_relative() {
+            break 'path_block Err(BuildError::NotRelative(path));
+        }
+
+        Ok(path)
+    };
+
     let replicas = if let Some(replicas_val) = mapping.get("replicas") {
         Some(
             replicas_val
@@ -65,14 +87,16 @@ pub fn parse_deploy_target(value: &YamlValue) -> Result<DeployTarget, Deployment
         )
     } else { None }.flop();
 
-    match (expose, replicas) {
-        (Ok(expose), Ok(replicas)) => Ok(DeployTarget {
+    match (expose, replicas, build) {
+        (Ok(expose), Ok(replicas), Ok(build)) => Ok(DeployTarget {
             expose,
             replicas: replicas.unwrap_or(DEFAULT_REPLICAS),
+            build,
         }),
-        (expose, replicas) => Err(DeploymentTargetOptionsError::Parts {
+        (expose, replicas, build) => Err(DeploymentTargetOptionsError::Parts {
             expose: expose.err(),
             replicas_invalid: replicas.err(),
+            build: build.err(),
         })
     }
 

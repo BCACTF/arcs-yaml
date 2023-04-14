@@ -45,8 +45,8 @@ impl YamlShape {
         self.hints.slice()
     }
 
-    pub fn deploy(&self) -> Option<DeployOptions> {
-        self.deploy
+    pub fn deploy(&self) -> Option<&DeployOptions> {
+        self.deploy.as_ref()
     }
 }
 

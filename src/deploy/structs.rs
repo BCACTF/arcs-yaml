@@ -1,16 +1,33 @@
 use std::fmt::Debug;
+use std::path::PathBuf;
 
-#[derive(Clone, Copy, PartialEq)]
+
+pub enum DeployTargetType { Web, Admin, Nc }
+#[derive(Clone, PartialEq)]
 pub struct DeployOptions {
     pub web: Option<DeployTarget>,
     pub admin: Option<DeployTarget>,
     pub nc: Option<DeployTarget>,
 }
 
+impl IntoIterator for DeployOptions {
+    type IntoIter = std::iter::Flatten<std::array::IntoIter<Option<(DeployTarget, DeployTargetType)>, 3>>;
+    type Item = (DeployTarget, DeployTargetType);
 
-#[derive(Clone, Copy, PartialEq)]
+    fn into_iter(self) -> Self::IntoIter {
+        use DeployTargetType::*;
+        [
+            self.web.map(|v| (v, Web)),
+            self.admin.map(|v| (v, Admin)),
+            self.nc.map(|v| (v, Nc)),
+        ].into_iter().flatten()
+    }
+}
+
+#[derive(Clone, PartialEq)]
 pub struct DeployTarget {
     pub expose: NetworkProtocol,
+    pub build: PathBuf,
     pub replicas: u8,
 }
 
@@ -42,12 +59,18 @@ impl Debug for DeployTarget {
 
         write!(
             f,
-            " ({}) >",
+            " ({}) ",
             format_args!(
                 "{} {}",
                 self.replicas,
                 if self.replicas == 1 { "replica" } else { "replicas" },
             ),
+        )?;
+
+        write!(
+            f,
+            " @  {}>",
+            self.build.display(),
         )
     }
 }
