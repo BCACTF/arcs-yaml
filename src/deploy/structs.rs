@@ -1,8 +1,60 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::path::PathBuf;
 
+use serde::ser::SerializeTuple;
+use serde::{Serialize, Serializer};
 
-pub enum DeployTargetType { Web, Admin, Nc }
+#[derive(Debug, Clone, PartialEq)]
+pub struct DeployLink {
+    pub deploy_target: DeployTargetType,
+    pub link: String,
+}
+
+impl Serialize for DeployLink {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut tup = serializer.serialize_tuple(2)?;
+        tup.serialize_element(&self.deploy_target.as_str())?;
+        tup.serialize_element(&self.link)?;
+        tup.end()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeployTargetType { Web, Admin, Nc, Static }
+
+impl DeployTargetType {
+    pub fn is_web(&self) -> bool {
+        matches!(self, Self::Web)
+    }
+    pub fn is_admin(&self) -> bool {
+        matches!(self, Self::Admin)
+    }
+    pub fn is_nc(&self) -> bool {
+        matches!(self, Self::Nc)
+    }
+    pub fn is_static(&self) -> bool {
+        matches!(self, Self::Static)
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Web => "web",
+            Self::Admin => "admin",
+            Self::Nc => "nc",
+            Self::Static => "static",
+        }
+    }
+}
+
+impl Display for DeployTargetType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 #[derive(Clone, PartialEq)]
 pub struct DeployOptions {
     pub web: Option<DeployTarget>,
