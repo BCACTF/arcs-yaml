@@ -219,11 +219,13 @@ fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>, ba
 
 #[doc(hidden)]
 pub mod __main {
+    use std::sync::atomic::AtomicBool;
+
     use crate::correctness::YamlCorrectness;
     use crate::YamlShape;
 
     pub fn main(yaml_correctness: YamlCorrectness) {
-        let mut errors_encountered = false;
+        let errors_encountered = AtomicBool::new(false);
 
         std::env::args()
             .skip(1)
@@ -234,6 +236,7 @@ pub mod __main {
                         Ok(string) => Some(string),
                         Err(_err) => {
                             println!("Failed to read `{path}` to string. Check location, permissions, and encoding of the file.");
+                            errors_encountered.store(true, core::sync::atomic::Ordering::SeqCst);
                             None
                         },
                     }
@@ -243,12 +246,12 @@ pub mod __main {
                 |yaml_parse_result| match YamlShape::try_from_str(&yaml_parse_result, &yaml_correctness.clone(), None) {
                     Ok(yaml) => println!("{yaml:#?}"),
                     Err(err) => {
-                        errors_encountered = true;
+                        errors_encountered.store(true, core::sync::atomic::Ordering::SeqCst);
                         eprintln!("{err}");
                     },
                 }
             );
-        if errors_encountered {
+        if errors_encountered.load(core::sync::atomic::Ordering::SeqCst) {
             std::process::exit(1);
         }
     }
