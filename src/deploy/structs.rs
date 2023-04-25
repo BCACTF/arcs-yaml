@@ -90,7 +90,7 @@ pub enum NetworkProtocol {
 }
 impl NetworkProtocol {
     pub fn port(&self) -> u32 {
-        match *self { Self::Tcp(n) => n, Self::Udp(n) => n }
+        match *self { Self::Tcp(n) | Self::Udp(n) => n }
     }
     pub fn is_tcp(&self) -> bool {
         matches!(self, Self::Tcp(_))

@@ -41,7 +41,7 @@ impl ValueType {
     pub const MAPP: ValueType = ValueType { type_enum: ValueTypeEnum::Mapping };
     pub const TAGG: ValueType = ValueType { type_enum: ValueTypeEnum::Tagged };
 
-    pub fn get_str(&self) -> &'static str {
+    pub fn get_str(self) -> &'static str {
         use ValueTypeEnum::*;
 
         match self.type_enum {

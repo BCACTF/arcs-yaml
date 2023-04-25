@@ -87,9 +87,9 @@ impl Display for DeploymentTargetOptionsError {
 #[derive(Debug, Clone, PartialEq)]
 pub enum DeployOptionsError {
     Parts {
-        web: Option<DeploymentTargetOptionsError>,
-        admin: Option<DeploymentTargetOptionsError>,
-        nc: Option<DeploymentTargetOptionsError>,
+        web: Box<Option<DeploymentTargetOptionsError>>,
+        admin: Box<Option<DeploymentTargetOptionsError>>,
+        nc: Box<Option<DeploymentTargetOptionsError>>,
     },
     BadBaseType(ValueType),
 }
@@ -103,9 +103,9 @@ impl Display for DeployOptionsError {
                 nc
             } => {
                 writeln!(f, "There were issues with certain deployment targets:")?;
-                if let Some(web  ) = web   { writeln!(f, "        web:   {web}")?;   }
-                if let Some(admin) = admin { writeln!(f, "        admin: {admin}")?; }
-                if let Some(nc   ) = nc    { writeln!(f, "        nc:    {nc}")?;    }
+                if let Some(web  ) = &**web   { writeln!(f, "        web:   {web}")?;   }
+                if let Some(admin) = &**admin { writeln!(f, "        admin: {admin}")?; }
+                if let Some(nc   ) = &**nc    { writeln!(f, "        nc:    {nc}")?;    }
                 Ok(())
             }
         }

@@ -6,7 +6,7 @@ use crate::structs::{get_type, ValueType};
 
 
 pub fn get_file_flag(path: PathBuf, base_path: &Path) -> Result<Flag, FlagError> {
-    match std::fs::read_to_string(&base_path.join(&path)) {
+    match std::fs::read_to_string(base_path.join(&path)) {
         Ok(s) => Ok(Flag::File(path, s)),
         Err(e) => if e.kind() == ErrorKind::NotFound {
             Err(FlagError::FileMissing(path))
@@ -46,8 +46,7 @@ pub enum Flag {
 impl Flag {
     pub fn as_str(&self) -> &str {
         match self {
-            Self::String(s) => s,
-            Self::File(_, s) => s,
+            Self::String(s) | Self::File(_, s) => s,
         }
     }
     pub fn path(&self) -> Option<&std::path::Path> {
@@ -68,7 +67,7 @@ impl Debug for Flag {
 }
 
 
-#[derive(Debug, Clone, )]
+#[derive(Default, Debug, Clone)]
 pub enum FlagError {
     BadType(ValueType),
     
@@ -79,6 +78,7 @@ pub enum FlagError {
     FileMissing(PathBuf),
     OsError(PathBuf),
     
+    #[default]
     MissingKey,
 }
 

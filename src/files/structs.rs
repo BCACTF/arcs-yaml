@@ -1,4 +1,6 @@
-use std::{fmt::Debug, path::{PathBuf, Path}};
+use std::fmt::Debug;
+use std::path::{PathBuf, Path};
+
 
 #[derive(Clone, PartialEq)]
 pub struct Files(pub (super) Vec<File>);
@@ -27,13 +29,15 @@ pub enum ContainerType {
     Nc,
     Admin,
     Web,
+    Static,
 }
 impl ContainerType {
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn try_from_str(s: &str) -> Option<Self> {
         match s {
             "nc" => Some(ContainerType::Nc),
             "admin" => Some(ContainerType::Admin),
             "web" => Some(ContainerType::Web),
+            "static" => Some(ContainerType::Static),
             _ => None,
         }
     }
@@ -42,7 +46,13 @@ impl ContainerType {
             ContainerType::Nc => "nc",
             ContainerType::Admin => "admin",
             ContainerType::Web => "web",
+            ContainerType::Static => "static",
         }
+    }
+}
+impl Debug for ContainerType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.to_str())
     }
 }
 
@@ -52,19 +62,19 @@ pub struct File {
     pub (super) path: PathBuf,
     pub (super) visible: bool,
     pub (super) alias: Option<String>,
-    
-    pub (super) data: Vec<u8>,
+
+    pub (super) data: once_cell::sync::OnceCell<Vec<u8>>,
 
     pub (super) container: Option<ContainerType>,
 }
 impl File {
     pub fn path(&self) -> &Path { &self.path }
     pub fn visible(&self) -> bool { self.visible }
-    pub fn alias(&self) -> Option<&str> { self.alias.as_ref().map(String::as_str) }
+    pub fn alias(&self) -> Option<&str> { self.alias.as_deref() }
     pub fn container(&self) -> Option<ContainerType> { self.container }
-    pub fn data(&self) -> &[u8] { &self.data }
-    pub fn data_vec(self) -> Vec<u8> { self.data }
-    pub fn data_vec_cloned(&self) -> Vec<u8> { self.data.clone() }
+    pub fn data(&self) -> Option<&[u8]> { self.data.get().map(Vec::as_slice) }
+    pub fn data_vec(self) -> Option<Vec<u8>> { self.data.into_inner() }
+    pub fn data_vec_cloned(&self) -> Option<Vec<u8>> { self.data.get().cloned() }
 }
 impl Debug for File {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -54,5 +54,5 @@ pub fn main() {
         .with_cats(category_correctness)
         .with_pnts(point_correctness);
 
-    arcs_yaml_parser::__main::main(yaml_correctness);
+    arcs_yaml_parser::__main::main(&yaml_correctness);
 }

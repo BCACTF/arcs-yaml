@@ -24,7 +24,7 @@ impl Serialize for File {
             base_struct.skip_field("container")?;
         }
         
-        base_struct.serialize_field("size", &self.data().len())?;
+        base_struct.serialize_field("size", &self.data().map_or(0, <[_]>::len))?;
         
         base_struct.end()
     }

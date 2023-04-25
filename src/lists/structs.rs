@@ -4,11 +4,11 @@ use crate::structs::ValueType;
 use super::StrList;
 
 
-#[derive(Clone, PartialEq)]
+#[derive(Default, Clone, PartialEq)]
 pub struct Authors(Vec<String>);
 
-#[derive(Debug, Clone)]
-pub enum AuthorError { BadEntryType(Vec<ValueType>), BadType(ValueType), MissingKey }
+#[derive(Default, Debug, Clone)]
+pub enum AuthorError { BadEntryType(Vec<ValueType>), BadType(ValueType), #[default] MissingKey }
 impl StrList for Authors {
     type Error = AuthorError; 
     fn from_iter<'a>(iter: impl Iterator<Item = &'a str>) -> Result<Self, Self::Error> {
@@ -25,7 +25,7 @@ impl StrList for Authors {
 }
 impl Authors {
     pub fn iter(&self) -> impl Iterator<Item = &str> {
-        self.0.iter().map(|string| string.as_str())
+        self.0.iter().map(String::as_str)
     }
     pub fn slice(&self) -> &[String] {
         &self.0
@@ -58,10 +58,10 @@ impl Debug for Authors {
 
 
 
-#[derive(Clone, PartialEq)]
+#[derive(Default, Clone, PartialEq)]
 pub struct Hints(Vec<String>);
-#[derive(Debug, Clone)]
-pub enum HintError { BadEntryType(Vec<ValueType>), BadType(ValueType), MissingKey }
+#[derive(Default, Debug, Clone)]
+pub enum HintError { BadEntryType(Vec<ValueType>), BadType(ValueType), #[default] MissingKey }
 impl StrList for Hints {
     type Error = HintError; 
     fn from_iter<'a>(iter: impl Iterator<Item = &'a str>) -> Result<Self, Self::Error> {
@@ -78,7 +78,7 @@ impl StrList for Hints {
 }
 impl Hints {
     pub fn iter(&self) -> impl Iterator<Item = &str> {
-        self.0.iter().map(|string| string.as_str())
+        self.0.iter().map(String::as_str)
     }
     pub fn slice(&self) -> &[String] {
         &self.0

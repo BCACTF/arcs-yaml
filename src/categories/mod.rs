@@ -9,10 +9,11 @@ use serde_yaml::Value as YamlValue;
 use crate::structs::{get_type, ValueType};
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum CategoryError {
     InvalidCategories(Vec<String>, Vec<ValueType>),
     InvalidBaseType(ValueType),
+    #[default]
     MissingKey,
 }
 impl Display for CategoryError {

@@ -22,6 +22,7 @@ use serde_yaml::{
 
 // Parsing functions, types, and errors
 use {
+    categories::value_to_categories,
     flag::get_flag,
     files::file_list,
     lists::as_str_list,
@@ -36,13 +37,6 @@ use {
 };
 pub use deploy::structs::DeployOptions;
 pub use files::structs::File;
-
-use {
-    lists::structs::AuthorError,
-    flag::FlagError,
-    categories::CategoryError,
-};
-
 
 // Yaml ValueType stuff
 use structs::{
@@ -100,10 +94,37 @@ macro_rules! collect_errors {
     };
 }
 
+macro_rules! get_map {
+    ($base:ident.$key:ident, $map:expr, missing: $err:expr $(,)?) => {
+        $base
+            .get(stringify!($key))
+            .map_or(Err($err), $map)
+    };
+    ($base:ident.$key:ident, $map:expr, $(default $(,)?)?) => {
+        $base
+            .get(stringify!($key))
+            .map_or_else(|| Err(Default::default()), $map)
+    };
+    ($base:ident.$key:ident, $map:expr, missing: $err:expr, error_wrap: $err_mapper:expr $(,)?) => {
+        $base
+            .get(stringify!($key))
+            .map_or(Err($err), $map)
+            .map_err($err_mapper)
+    };
+}
+
+macro_rules! get_primitive {
+    ($base:ident.$key:ident ($fn:ident $(=> $map:expr)?) else $err:expr) => {
+        if let Some(val) = $base.get(stringify!($key)) {
+            val.$fn()$(.map($map))?.ok_or_else(|| $err(get_type(val)))
+        } else { Err($err(ValueType::NULL)) }
+    };
+}
 
 fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>, base_path: &Path) -> Result<YamlShape, YamlVerifyError> {
     use YamlVerifyError::*;
     use YamlAttribVerifyError::*;
+    use YamlAttribVerifyError as AttribError;
 
     let correctness = correctness_options.unwrap_or_default();
 
@@ -118,25 +139,22 @@ fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>, ba
         hints,
         files,
     ) = {
-        let categories = base
-            .get("categories")
-            .map_or(Err(CategoryError::MissingKey), categories::value_to_categories)
-            .map_err(Categories);
+        let categories = get_map!(
+            base.categories, value_to_categories,
+            default,
+        ).map_err(AttribError::Categories);
     
-        let authors = base
-            .get("authors")
-            .map_or(Err(AuthorError::MissingKey), as_str_list)
-            .map_err(Authors);
-    
-        let hints = base
-            .get("hints")
-            .map_or(crate::lists::StrList::from_iter([].into_iter()), as_str_list)
-            .map_err(Hints);
+        let authors = get_map!(
+            base.authors, as_str_list,
+            default,
+        ).map_err(AttribError::Authors);
 
-        let files = base
-            .get("files")
-            .map(|value| file_list(value, base_path))
-            .flop()
+        let hints = get_map!(
+            base.hints, as_str_list,
+        ).map_err(AttribError::Hints);
+
+        let files = base.get("files")
+            .map(|value| file_list(value, base_path)).flop()
             .map_err(Files);
         
         (categories, authors, hints, files)
@@ -150,28 +168,16 @@ fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>, ba
         .map_err(Deploy);
 
 
-    let points = if let Some(point_val) = base.get("value") {
-        point_val.as_u64().ok_or_else(|| PointsNotInt(get_type(point_val)))
-    } else { Err(PointsNotInt(ValueType::NULL)) };
+    let points = get_primitive!(base.value (as_u64) else PointsNotInt);
 
-    let flag = base
-        .get("flag")
-        .map_or(Err(FlagError::MissingKey), |value| get_flag(value, base_path))
-        .map_err(Flag);
-
-
-    let name = if let Some(name_val) = base.get("name") {
-        name_val.as_str().map(str::to_string).ok_or_else(|| NameNotString(get_type(name_val)))
-    } else { Err(NameNotString(ValueType::NULL)) };
-
-    let description = if let Some(desc_val) = base.get("description") {
-        desc_val.as_str().map(str::to_string).ok_or_else(|| DescNotString(get_type(desc_val)))
-    } else {  Err(DescNotString(ValueType::NULL)) };
-
-
-    let visible = if let Some(point_val) = base.get("visible") {
-        point_val.as_bool().ok_or_else(|| VisNotBool(get_type(point_val)))
-    } else { Err(VisNotBool(ValueType::NULL)) };
+    let flag = get_map!(
+        base.flag, |value| get_flag(value, base_path),
+        default,
+    ).map_err(AttribError::Flag);
+    
+    let name = get_primitive!(base.name (as_str => str::to_string) else NameNotString);
+    let description = get_primitive!(base.description (as_str => str::to_string) else DescNotString);
+    let visible = get_primitive!(base.visible (as_bool) else VisNotBool);
 
     let (
         authors,
@@ -224,7 +230,7 @@ pub mod __main {
     use crate::correctness::YamlCorrectness;
     use crate::YamlShape;
 
-    pub fn main(yaml_correctness: YamlCorrectness) {
+    pub fn main(yaml_correctness: &YamlCorrectness) {
         let errors_encountered = AtomicBool::new(false);
 
         std::env::args()
@@ -268,6 +274,16 @@ impl<T, E> Flop for Option<Result<T, E>> {
         if let Some(res) = self {
             res.map(Some)
         } else { Ok(None) }
+    }
+}
+impl<T, E> Flop for Result<Option<T>, E> {
+    type Target = Option<Result<T, E>>;
+    fn flop(self) -> Self::Target {
+        match self {
+            Ok(Some(res)) => Some(Ok(res)),
+            Ok(None) => None,
+            Err(e) => Some(Err(e)),
+        }
     }
 }
 

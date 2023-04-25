@@ -53,22 +53,22 @@ pub fn parse_deploy_target(value: &YamlValue) -> Result<DeployTarget, Deployment
 
     let expose = mapping
         .get("expose")
-        .map(YamlValue::as_str).flatten()
+        .and_then(YamlValue::as_str)
         .map_or(Err(ExposeError::Missing), parse_expose);
 
 
     let build = 'path_block: {
-        let value = if let Some(value) = mapping.get("src") {
-            value
-        } else { break 'path_block Ok(PathBuf::from(".")) };
+        let Some(value) = mapping.get("src") else {
+            break 'path_block Ok(PathBuf::from("."))
+        };
         
-        let string = if let Some(string) = value.as_str() {
-            string
-        } else { break 'path_block Err(BuildError::BadType(get_type(value))) };
+        let Some(string) = value.as_str() else {
+            break 'path_block Err(BuildError::BadType(get_type(value)))
+        };
 
-        let path = if let Ok(path) = PathBuf::from_str(string) {
-            path
-        } else { break 'path_block Err(BuildError::NotPath(string.to_string())) };
+        let Ok(path) = PathBuf::from_str(string) else {
+            break 'path_block Err(BuildError::NotPath(string.to_string()))
+        };
     
         if !path.is_relative() {
             break 'path_block Err(BuildError::NotRelative(path));
@@ -77,15 +77,13 @@ pub fn parse_deploy_target(value: &YamlValue) -> Result<DeployTarget, Deployment
         Ok(path)
     };
 
-    let replicas = if let Some(replicas_val) = mapping.get("replicas") {
-        Some(
-            replicas_val
-                .as_u64()
-                .map(u8::try_from)
-                .map(Result::ok).flatten()
-                .ok_or_else(|| get_type(replicas_val))
-        )
-    } else { None }.flop();
+    let replicas = mapping.get("replicas").map(|replicas_val| {
+        replicas_val
+            .as_u64()
+            .map(u8::try_from)
+            .and_then(Result::ok)
+            .ok_or_else(|| get_type(replicas_val))
+    }).flop();
 
     match (expose, replicas, build) {
         (Ok(expose), Ok(replicas), Ok(build)) => Ok(DeployTarget {
@@ -123,9 +121,9 @@ pub fn parse_deploy(value: &YamlValue) -> Result<DeployOptions, DeployOptionsErr
     match (web, admin, nc) {
         (Ok(web), Ok(admin), Ok(nc)) => Ok(DeployOptions { web, admin, nc }),
         (web, admin, nc) => Err(DeployOptionsError::Parts {
-            web: web.err(),
-            admin: admin.err(),
-            nc: nc.err(),
+            web: Box::new(web.err()),
+            admin: Box::new(admin.err()),
+            nc: Box::new(nc.err()),
         })
     }
 }
