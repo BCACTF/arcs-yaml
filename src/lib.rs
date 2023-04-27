@@ -225,6 +225,8 @@ fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>, ba
 
 #[doc(hidden)]
 pub mod __main {
+    use std::path::PathBuf;
+    use std::str::FromStr;
     use std::sync::atomic::AtomicBool;
 
     use crate::correctness::YamlCorrectness;
@@ -233,30 +235,53 @@ pub mod __main {
     pub fn main(yaml_correctness: &YamlCorrectness) {
         let errors_encountered = AtomicBool::new(false);
 
-        std::env::args()
-            .skip(1)
-            .filter_map(
-                |path| {
-                    println!("{path:-^30}");
-                    match std::fs::read_to_string(&path) {
-                        Ok(string) => Some(string),
-                        Err(_err) => {
-                            println!("Failed to read `{path}` to string. Check location, permissions, and encoding of the file.");
-                            errors_encountered.store(true, core::sync::atomic::Ordering::SeqCst);
-                            None
-                        },
+        macro_rules! set_err_if {
+            ($result:expr; $err_ctr:ident: CL ($err_print_stmt:expr); $($mapper:expr)?) => {
+                match ($result) {
+                    Ok(value) => Some($($mapper)?(value)),
+                    Err(err) => {
+                        ($err_print_stmt)(err);
+                        $err_ctr.store(true, core::sync::atomic::Ordering::SeqCst);
+                        None
                     }
                 }
-            )
-            .for_each(
-                |yaml_parse_result| match YamlShape::try_from_str(&yaml_parse_result, &yaml_correctness.clone(), None) {
-                    Ok(yaml) => println!("{yaml:#?}"),
-                    Err(err) => {
-                        errors_encountered.store(true, core::sync::atomic::Ordering::SeqCst);
-                        eprintln!("{err}");
-                    },
+            };
+            ($result:expr; $err_ctr:ident: $err_print_stmt:expr; $($mapper:expr)?) => {{
+                match ($result) {
+                    Ok(value) => Some($($mapper)?(value)),
+                    Err(_) => {
+                        $err_print_stmt;
+                        $err_ctr.store(true, core::sync::atomic::Ordering::SeqCst);
+                        None
+                    }
                 }
-            );
+            }};
+        }
+
+        std::env::args()
+            .skip(1)
+            .filter_map(|path| set_err_if!(
+                PathBuf::from_str(&path);
+                errors_encountered: println!("`{path}` is not a valid path!");
+            ))
+            .filter_map(|mut path| {
+                println!("{:-^40}", path.display());
+                set_err_if!(
+                    std::fs::read_to_string(&path);
+                    errors_encountered: println!("Failed to read `{}` to string. Check location, permissions, and encoding of the file.", path.display());
+                    |data| {
+                        path.pop();
+                        (data, path)
+                    }
+                )
+            })
+            .for_each(|(data, base_path)| {
+                set_err_if!(
+                    YamlShape::try_from_str(&data, &yaml_correctness.clone(), Some(&base_path));
+                    errors_encountered: CL (|err| eprintln!("{err}"));
+                    |yaml| println!("{yaml:#?}")   
+                );
+            });
         if errors_encountered.load(core::sync::atomic::Ordering::SeqCst) {
             std::process::exit(1);
         }
