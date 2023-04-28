@@ -137,9 +137,13 @@ pub fn get_file_from_mapping(mapping: &YamlMapping, base_path: &Path) -> Result<
         use once_cell::sync::OnceCell;
 
         let path = if let Ok(path) = path.as_ref() {
-            base_path.join(path)
+            let uncanonicalized = base_path.join(path);
+            match base_path.join(path).canonicalize() {
+                Ok(path) => path,
+                Err(_) => break 'data_block Err(DataReadErr::Canonicalize(uncanonicalized)),
+            }
         } else { break 'data_block Ok(OnceCell::new()) };
-        
+
         // FIXME --> I made the hack worse, testing time.
         if matches!(container, Ok(Some(_))) { break 'data_block Ok(OnceCell::new()); }
 

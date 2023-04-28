@@ -85,6 +85,7 @@ impl Display for ContainerTypeErr {
 #[derive(Debug, Clone, PartialEq)]
 pub enum DataReadErr {
     DoesntExist(PathBuf),
+    Canonicalize(PathBuf),
     OsError(PathBuf),
 }
 impl Display for DataReadErr {
@@ -92,6 +93,7 @@ impl Display for DataReadErr {
         use DataReadErr::*;
         match self {
             DoesntExist(p) => write!(f, "The file path `{}` doesn't exist.", p.display()),
+            Canonicalize(p) => write!(f, "There was an issue finding the absolute path to `{}`. Maybe it doesn't exist.", p.display()),
             OsError(p) => write!(f, "There was an issue reading the file at `{}`. Maybe check permissions?", p.display()),
         }
     }
