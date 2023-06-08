@@ -18,7 +18,7 @@ pub fn get_file_flag(path: PathBuf, base_path: &Path) -> Result<Flag, FlagError>
 
 pub fn get_flag(value: &YamlValue, base_path: &Path) -> Result<Flag, FlagError> {
     if let Some(flag_str) = value.as_str() {
-        Ok(Flag::String(flag_str.to_string()))
+        Ok(Flag::String(flag_str.trim().to_string()))
     } else if let Some(mapping) = value.as_mapping() {
         if let Some(Some(file)) = mapping.get("file").map(YamlValue::as_str) {
             if let Ok(path) = PathBuf::from_str(file) {
@@ -46,7 +46,7 @@ pub enum Flag {
 impl Flag {
     pub fn as_str(&self) -> &str {
         match self {
-            Self::String(s) | Self::File(_, s) => s,
+            Self::String(s) | Self::File(_, s) => s.trim(),
         }
     }
     pub fn path(&self) -> Option<&std::path::Path> {
