@@ -47,6 +47,15 @@ impl DeployTargetType {
             Self::Static => "static",
         }
     }
+
+    pub fn resource_type(&self) -> &'static str {
+        match self {
+            Self::Web => "Web server",
+            Self::Admin => "Admin bot server",
+            Self::Nc => "Netcat server",
+            Self::Static => "Static file",
+        }
+    }
 }
 
 impl Display for DeployTargetType {
