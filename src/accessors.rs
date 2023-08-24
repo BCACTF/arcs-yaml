@@ -66,5 +66,6 @@ impl YamlShape {
     pub fn points(&self) -> u64 { self.points }
 
     pub fn visible(&self) -> bool { self.visible }
-}
 
+    pub fn tiebreaker(&self) -> bool { self.tiebreaker }
+}
