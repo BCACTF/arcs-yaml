@@ -72,6 +72,7 @@ pub struct YamlShape {
     description: String,
 
     visible: bool,
+    tiebreaker: bool,
 }
 
 
@@ -118,6 +119,11 @@ macro_rules! get_primitive {
         if let Some(val) = $base.get(stringify!($key)) {
             val.$fn()$(.map($map))?.ok_or_else(|| $err(get_type(val)))
         } else { Err($err(ValueType::NULL)) }
+    };
+    (OPTIONAL $base:ident.$key:ident ($fn:ident $(=> $map:expr)?) else $err:expr) => {
+        if let Some(val) = $base.get(stringify!($key)) {
+            val.$fn()$(.map($map))?.ok_or_else(|| $err(get_type(val))).map(|v| Some(v))
+        } else { Ok(None) }
     };
 }
 
@@ -178,6 +184,7 @@ fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>, ba
     let name = get_primitive!(base.name (as_str => str::to_string) else NameNotString);
     let description = get_primitive!(base.description (as_str => str::to_string) else DescNotString);
     let visible = get_primitive!(base.visible (as_bool) else VisNotBool);
+    let tiebreaker = get_primitive!(OPTIONAL base.tiebreaker (as_bool) else TiebreakNotBool);
 
     let (
         authors,
@@ -194,6 +201,7 @@ fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>, ba
         description,
 
         visible,
+        tiebreaker,
     ) = collect_errors!(
         authors,
         categories,
@@ -209,14 +217,17 @@ fn verify_yaml(yaml_text: &str, correctness_options: Option<YamlCorrectness>, ba
         description,
         
         visible,
+        tiebreaker,
     ).map_err(PartErrors)?;
+
+    let tiebreaker = tiebreaker.unwrap_or(true);
 
     let shape = YamlShape {
         authors, categories, hints, files,
         deploy,
         points, flag,
         name, description,
-        visible,
+        visible, tiebreaker,
     };
     correctness.verify(&shape).map_err(Correctness)?;
 

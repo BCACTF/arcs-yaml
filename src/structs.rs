@@ -76,6 +76,7 @@ pub enum YamlAttribVerifyError {
 
     DescNotString(ValueType),
     VisNotBool(ValueType),
+    TiebreakNotBool(ValueType),
 }
 
 #[derive(Debug)]
@@ -94,6 +95,7 @@ impl Display for YamlAttribVerifyError {
             NameNotString(vtype) => writeln!(f, "The name should be a string, not {vtype}."),
             DescNotString(vtype) => writeln!(f, "The description should be a string, not {vtype}."),
             VisNotBool(vtype) => writeln!(f, "The visibility switch should be a boolean, not {vtype}."),
+            TiebreakNotBool(vtype) => writeln!(f, "The tiebreaker switch should be a boolean or unset, not {vtype}."),
             
             PointsNotInt(ValueType { type_enum: ValueTypeEnum::Number }) => writeln!(f, "The value should be an positive integer, not negative or fractional."),
             PointsNotInt(vtype)  => writeln!(f, "The value should be an positive integer, not {vtype}."),
