@@ -1,25 +1,14 @@
 use std::fmt::{Debug, Display};
 use std::path::PathBuf;
 
-use serde::ser::SerializeTuple;
 use serde::{Serialize, Serializer};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct DeployLink {
+    #[serde(rename = "type")]
     pub deploy_target: DeployTargetType,
+    #[serde(rename = "location")]
     pub link: String,
-}
-
-impl Serialize for DeployLink {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut tup = serializer.serialize_tuple(2)?;
-        tup.serialize_element(&self.deploy_target.as_str())?;
-        tup.serialize_element(&self.link)?;
-        tup.end()
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -61,6 +50,14 @@ impl DeployTargetType {
 impl Display for DeployTargetType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
+    }
+}
+
+impl Serialize for DeployTargetType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer {
+        serializer.serialize_str(self.as_str())
     }
 }
 
