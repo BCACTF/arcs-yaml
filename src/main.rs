@@ -1,4 +1,4 @@
-use arcs_yaml_parser::correctness::{FlagCorrectness, CategoryCorrectness, YamlCorrectness, PointCorrectness};
+use arcs_ctf_yaml_parser::correctness::{FlagCorrectness, CategoryCorrectness, YamlCorrectness, PointCorrectness};
 
 use std::borrow::Cow;
 
@@ -54,5 +54,5 @@ pub fn main() {
         .with_cats(category_correctness)
         .with_pnts(point_correctness);
 
-    arcs_yaml_parser::__main::main(&yaml_correctness);
+    arcs_ctf_yaml_parser::__main::main(&yaml_correctness);
 }
