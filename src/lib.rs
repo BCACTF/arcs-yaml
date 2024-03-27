@@ -10,6 +10,8 @@ mod serialize_impl;
 
 pub mod correctness;
 
+#[cfg(test)]
+pub mod tests;
 
 use std::path::Path;
 
@@ -53,6 +55,7 @@ pub use structs::{
 use correctness::YamlCorrectness;
 
 
+pub const DEFAULT_CATEGORIES: &str = "misc,binex,foren,crypto,webex,rev";
 
 
 
